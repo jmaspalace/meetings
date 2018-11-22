@@ -1,0 +1,131 @@
+/*button#edit-submitted-documento-upload-button {
+    color: #fff;
+    background-color: #000000;
+    border-color: #000000;
+    border: 1px solid transparent;
+    border-radius: 0px;
+}*/
+    input[id^=edit-submitted-documento-upload] {
+        display: inline;
+        /*background-color: #000000;
+        margin-right: 10px;
+        padding: .2rem .3rem;
+        color: #ffffff;*/
+        margin: 12px 12px;
+      
+    }
+
+
+  input[id^=edit-submitted-document-upload] {
+        display: inline;
+        /* background-color: #000000;
+        margin-right: 10px;
+        padding: .2rem .3rem;
+        color: #ffffff;*/
+         margin: 12px 12px;
+      
+    }
+
+    
+
+    button[id^=edit-submitted-documento-upload-button] {
+       color: #fff;
+    background-color: #a09f9f;
+    border-color: #00a09f9f0000;
+    border: 1px solid transparent;
+    border-radius: 0px;
+    padding: .2rem 5rem;
+    }
+
+
+
+    .bloque-form .submit button[type=submit]:hover {
+   background-color: #a09f9f;
+    color: #ffffff;
+}
+
+
+     button[id^=edit-submitted-document-upload-button] {
+       color: #fff;
+    background-color: #a09f9f;
+    border-color: #a09f9f;
+    border: 1px solid transparent;
+    border-radius: 0px;
+    padding: .2rem 5rem;
+    }
+
+    button[id^=edit-submitted-documento-upload-button]:hover {
+       color: #fff;
+    background-color: #a09f9f;
+    border-color: #ffffff;
+    border: 1px solid transparent;
+    border-radius: 0px;
+    padding: .2rem 5rem;
+    }
+
+    button[id^=edit-submitted-document-upload-button]:hover {
+       color: #fff;
+    background-color: #a09f9f;
+    border-color: #ffffff;
+    border: 1px solid transparent;
+    border-radius: 0px;
+    padding: .2rem 5rem;
+    }
+
+.webform-submit {
+ color: #fff;
+    background-color: #a09f9f;
+    border-color: #ffffff;
+    border: 1px solid transparent;
+    border-radius: 0px;
+    padding: .2rem 5rem;
+
+}
+
+.bloque-form .submit {
+    text-align: center;
+ 
+     display: inline;
+     
+}
+
+button#edit-submitted-documento-remove-button {
+    color: #fff;
+    background-color: #a1a1a1;
+    border-color: #a1a1a1;
+    border: 1px solid transparent;
+    border-radius: 0px;
+}
+
+.header nav .menu>li .submenu .container ul li a {
+    color: #000000;
+    text-decoration: none;
+    font-size: .9rem;
+    /*font-weight: bold;*/
+}
+
+
+.header nav .menu>li .submenu .container ul li .number_rooms {
+    display: 000000;
+    font-size: .7rem;
+    color: #a09f9f;
+    margin: 0;
+   /* font-weight: bold;*/
+}
+
+
+li::before {
+     color: #ffffff
+  }
+
+  ul.points li::before {
+    position: absolute;
+    left: 0;
+    background: #ffffff;
+    top: 10px;
+    width: 5px;
+    height: 5px;
+    content: "";
+    -webkit-border-radius: 50%;
+    border-radius: 50%;
+}

@@ -1,0 +1,5 @@
+core = "7.x"
+description = "Web service para contenidos"
+name = "Menu links CDI"
+package = "CDI INTERACTIVE"
+configure = admin/config/content/menu_link_cdi

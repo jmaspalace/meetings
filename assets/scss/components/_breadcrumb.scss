@@ -1,0 +1,40 @@
+.bloque-breadcrumb {
+	margin-top: 2rem;
+	margin-bottom: 2rem;
+	ul {
+		margin: 0;
+		padding: 0;
+		li {
+			list-style: none;
+			display: inline-block;
+			margin-right: 1rem;
+			text-transform: capitalize;
+			margin-right: 0.5rem;
+			padding-right: 1rem;
+			position: relative;
+			a {
+				color: gray;
+				font-size: 0.9rem;
+				text-transform: capitalize;
+				&:hover {
+					opacity: 0.6;
+				}
+			}
+			&::after {
+				content: "|";
+				position: absolute;
+				right: 0;
+				color: gray;
+				font-size: 0.9rem;
+			}
+			&:last-child {
+				a {
+					color: $amarillo;
+				}
+				&::after {
+					display: none;
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,20 @@
+.bloque-content1 {
+	h2 {
+		text-align: center;
+	}
+	h3 {
+		font-size: 2rem;
+		span {
+			color: $amarillo;
+		}
+	}
+	.img-responsive {
+		width: 100%;
+	}
+	.container {
+		margin-top: 2rem;
+	}
+	> p {
+		text-align: center;
+	}
+}

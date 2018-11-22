@@ -1,0 +1,5 @@
+name = Palace Resorts - MICE
+description = Configuración básica mice
+core = 7.x
+package= "CDI INTERACTIVE"
+configure = admin/config/mice_settings

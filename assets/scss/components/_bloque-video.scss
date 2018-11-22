@@ -1,0 +1,45 @@
+.bloque-video {
+	h2 {
+		text-align: center;
+	}
+}
+
+.container-video {
+	height: 0;
+	overflow: hidden;
+	padding-bottom: 56.25%;
+	position: relative;
+	width: 100%;
+	iframe {
+		height: 100%;
+		left: 0;
+		position: absolute;
+		top: 0;
+		width: 100%;
+		border: none;
+	}
+}
+
+.volumenVideo {
+	width: 28px;
+	height: 28px;
+	background: url("../img/volumen.png") bottom center no-repeat transparent;
+	background-size: 28px;
+	position: absolute;
+	z-index: 4;
+	bottom: 2rem;
+	left: 20px;
+	overflow: hidden;
+	cursor: pointer;
+	display: none;
+	&:hover {
+		opacity: 0.6;
+	}
+	&.activado {
+		background: url("../img/volumen.png") top center no-repeat transparent;
+		background-size: 28px;
+	}
+	@media (max-width: $anchoMobile) {
+		display: none !important;
+	}
+}

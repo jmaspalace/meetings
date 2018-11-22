@@ -1,0 +1,187 @@
+.bloque-form {
+	.container {
+		padding: 3rem 6rem;
+		background: #f8f8f8;
+		@media screen and (max-width: $anchoMobile) {
+			padding: 2rem 1rem;
+		}
+	}
+	h3 {
+		margin: 2rem 0;
+		margin-top: 3rem;
+		text-align: center;
+	}	
+	fieldset {
+		margin-bottom: 2rem;
+		border: none;
+		background: none;
+		border-radius: 0;
+		box-shadow: none;
+		@media screen and (max-width: $anchoMobile) {
+			margin-bottom: 0rem;
+		}
+	}
+	.panel-body {
+		padding: 0;
+	}
+	.panel-heading {
+		display: none;
+	}
+	label {
+		font-weight: 100;
+		font-size: 1rem;
+	}
+	input.text {
+		width: 100%;
+		background: #f3f3f3;
+		border: solid 1px #e1e1e1;
+		border-radius: 3px;
+		color: #919191;
+		padding: 0.7rem;
+		font-weight: 100;
+		font-size: 1rem;
+		font-family: $roboto;
+		outline: 0;
+		&:focus {
+			background: white;
+			border-color: $amarillo;
+		}
+		&.parsley-error {
+			border-color: #e96863;
+			background: #ffeae9; 
+		}
+		&::-webkit-input-placeholder:after {
+			color:red;
+			content:" *";
+		}
+		@media screen and (max-width: $anchoMobile) {
+			margin: 0.8rem 0;
+		}
+	}
+	.bootstrap-select {
+		width: 100% !important;
+		button.dropdown-toggle {
+			width: 100%;
+			background: #f3f3f3;
+			border: solid 1px #e1e1e1;
+			border-radius: 3px;
+			color: #919191;
+			font-weight: 100;
+			font-size: 1rem;
+			font-family: $roboto;
+			outline: 0;
+			padding: 0.7rem;
+			&:hover, &:focus {
+				outline: 0 !important;
+				box-shadow: none !important;
+			}
+			&:focus {
+				background: white;
+				border-color: $amarillo;
+			}
+			&.parsley-error {
+				border-color: #e96863;
+				background: #ffeae9; 
+			}
+			@media screen and (max-width: $anchoMobile) {
+				margin: 0.8rem 0;
+			}
+		}
+	}
+	.dropdown-menu {
+		box-shadow: none;
+		border-radius: 0;
+		ul {
+			li {
+				a {
+					color: #919191;
+					font-weight: 100;
+					font-family: $roboto;
+				}
+			}
+		}
+	}
+	.submit {
+		text-align: center;
+		margin-top: 3rem;
+		button[type="submit"] {
+			background: $amarillo;
+			color: white;
+			border: solid 1px $amarillo;
+			font-size: 1.2rem;
+			font-family: $umalight;
+			text-align: center;
+			padding: 0.5rem 5rem;
+			font-weight: 100;
+			display: inline-block;
+			border-radius: 0;
+			&:hover {
+				background: none;
+				color: $amarillo;
+			}
+		}
+	}
+	.parsley-errors-list {
+		li {
+			color: #e96863;
+			list-style: none;
+		}
+	}
+}
+
+/* Datepicker */
+
+.datepicker {
+	border-radius: 0;
+	border: none;
+	box-shadow: none;
+	font-family: $roboto;
+	font-weight: 100;
+	padding: 13px;
+	.datepicker-switch {
+		font-family: $umalight;
+		border-radius: 0 !important;
+		font-size: 1.1rem;
+		color: $amarillo;
+		text-transform: uppercase;
+	}
+	.active.day, .month.active, .year.active {
+		background: $amarillo !important;
+		border-radius: 0;
+	}
+	td, th, .month {
+		border-radius: 0 !important;
+	}
+	.dow {
+		color: $amarillo;
+		font-family: $roboto;
+	}
+	.disabled.day {
+		color: #c7c7c7;
+		&:hover {
+			color: #c7c7c7;
+		}
+	}
+}
+
+.ui-autocomplete {
+	border: none !important;
+	background: white !important;
+	li {
+		font-family: $roboto;
+		font-size: 0.8rem;
+	}
+	.ui-state-active,
+	.ui-widget-content .ui-state-active,
+	.ui-widget-header .ui-state-active,
+	a.ui-button:active,
+	.ui-button:active,
+	.ui-button.ui-state-active:hover {
+		background: $amarillo;
+		border: none;
+	}
+}
+
+.checkbox:first-child, .radio:first-child {
+    margin-top: -5px;
+}

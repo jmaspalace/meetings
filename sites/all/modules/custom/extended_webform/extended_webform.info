@@ -1,0 +1,17 @@
+name = Extended Webform
+description = Modulo para extender las funcionalidades de los formularios del sitio.
+core = 7.x
+; Dependencies
+dependencies[] = webform
+dependencies[] = i18n
+dependencies[] = field_group
+; Files
+files[] = extended_webform.module
+configure = admin/config/content/extended_webform
+
+; Information added by drupal.org packaging script on 2012-04-06
+
+version = "7.x-1.2"
+core = "7.x"
+project = "extended_webform"
+package = "Custom Modules"

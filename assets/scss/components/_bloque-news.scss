@@ -1,0 +1,29 @@
+.bloque-list-news {
+	.box-news {
+		padding: 0 1rem;
+		margin-bottom: 2rem;
+		.image {
+			position: relative;
+			img {
+				width: 100%;
+			}
+			h3 {
+				position: absolute;
+				top: 40%;
+				text-align: center;
+				width: 100%;
+				padding: 20px;
+				color: white;
+				margin: 0;
+			}
+		} 
+		p {
+			margin-top: 1rem;
+		}
+		a {
+			text-transform: uppercase;
+			font-weight: bold;
+			display: block;
+		}
+	}	
+}

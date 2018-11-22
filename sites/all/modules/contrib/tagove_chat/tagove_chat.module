@@ -1,0 +1,177 @@
+<?php
+
+/**
+ * @file
+ * Adds Tagove video chat, voice call and text chat JavaScript code to your site.
+ */
+
+
+/**
+ * Implements hook_menu().
+ */
+function tagove_chat_menu() {
+  $items['admin/config/services/tagovechat'] = array(
+    'title' => 'tagove',
+    'description' => 'Configure your Tagove account number and chat visibility settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tagove_chat_admin_settings_form'),
+    'access arguments' => array('administer tagovechat'),
+    'file' => 'tagove_chat.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function tagove_chat_permission() {
+  return array(
+    'administer tagovechat' => array(
+      'title' => 'Administer tagovechat',
+      'description' => 'Allows users to configure the tagove account number and chat visibility settings.',
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function tagove_chat_page_alter(&$page) {
+  // If we can determine an account number to use and LiveChat should be
+  // embedded on the current page based on the module's visibility settings...
+  $account_number = tagove_chat_account_number();
+
+  if (!empty($account_number) & tagove_chat_check_visibility()) {
+    // Embed the LiveChat JavaScript tag in the page footer.
+    drupal_add_js(tagove_chat_javascript_tag(), array(
+      'type' => 'inline',
+      'scope' => 'header'
+    ));
+    drupal_add_js('https://s.tagove.com/a-'.$account_number.'/init.js', array(
+      'type' => 'external',
+      'scope' => 'footer'
+    ));
+    drupal_add_js('https://s.tagove.com/main.js', array(
+      'type' => 'external',
+      'scope' => 'footer'
+    ));
+    $a_tag = array(
+      '#theme' => 'html_tag',
+      '#tag' => 'a',
+      '#value' => 'Live chat software',
+      '#attributes' => array(
+        'href' => 'https://www.tagove.com?welcome',
+        'title'=>'live chat software'
+      )
+    );
+    $noscript = array(
+      '#theme' => 'html_tag',
+      '#tag' => 'noscript',
+      '#value' => drupal_render($a_tag)
+    );
+    drupal_add_html_head($noscript, 'tagove_noscript');
+  }
+}
+
+/**
+ * Returns the tagovechat JavaScript custom config to set the user language.
+ *
+ * @return string
+ *   The string with initial config fort the widget.
+ */
+function tagove_chat_javascript_tag() {
+  global $language;
+  $lang_code = $language->language;
+  return "window.tagove=window.tagove||[];tagove.push({userDetails:{},lang:'".$lang_code."'});";
+}
+
+/**
+ * Determines whether or not LiveChat should be embedded on the current page.
+ */
+function tagove_chat_check_visibility() {
+  // First check visibility against the page and role based visibility settings.
+  $visibility = _tagove_chat_visibility_pages() && _tagove_chat_visibility_roles();
+
+  // Then allow other modules to alter the visibility for the current request.
+  drupal_alter('tagove_chat_visibility', $visibility);
+
+  return $visibility;
+}
+
+/**
+ * Determines whether or not the tagovechat code should be added to the current
+ * page based on the module's visibility settings.
+ */
+function _tagove_chat_visibility_pages() {
+  $page_match = drupal_static(__FUNCTION__);
+
+  // If the page match value hasn't been cached yet on this page request...
+  if (!isset($page_match)) {
+    $visibility = variable_get('tagove_chat_visibility', 0);
+    $pages = variable_get('tagove_chat_pages', '');
+
+    // Determine whether or not the current request matches a page listed in the
+    // settings for specific LiveChat inclusion or exclusion.
+    if (!empty($pages)) {
+      $path = drupal_get_path_alias($_GET['q']);
+
+      // Compare with the internal and path alias (if any).
+      $page_match = drupal_match_path($path, $pages);
+
+      if ($path != $_GET['q']) {
+        $page_match = $page_match || drupal_match_path($_GET['q'], $pages);
+      }
+
+      // When $visibility has a value of 0, LiveChat is embedded on all pages
+      // except those listed in $pages. When set to 1, it is displayed only on
+      // those pages listed in $pages.
+      $page_match = !($visibility xor $page_match);
+    }
+    else {
+      $page_match = TRUE;
+    }
+  }
+
+  return $page_match;
+}
+
+/**
+ * Determines whether or not tagovechat should be added to the page for a given
+ * account based on its user roles.
+ */
+function _tagove_chat_visibility_roles() {
+  global $user;
+
+  $roles = variable_get('tagove_chat_roles', array());
+  $enabled = TRUE;
+
+  // If one or more roles are meant to be excluded from LiveChat...
+  if (array_sum($roles) > 0) {
+    // Look for them in the user's roles array and disable the LiveChat widget
+    // if we find any.
+    foreach (array_keys($user->roles) as $rid) {
+      if (isset($roles[$rid]) && $rid == $roles[$rid]) {
+        return FALSE;
+      }
+    }
+  }
+
+  return TRUE;
+}
+
+/**
+ * Returns the site's tagovechat account number.
+ */
+function tagove_chat_account_number() {
+  return variable_get('tagove_chat_account', '');
+}
+
+/**
+ * Returns the registration link for Drupal users.
+ */
+function tagove_chat_registration_url() {
+  return 'https://app.tagove.com/site/signup';
+}

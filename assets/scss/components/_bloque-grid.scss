@@ -1,0 +1,23 @@
+.bloque-grid {
+	.grid {
+		float: left;
+		width: 100%;
+	}
+
+	.grid-item {
+		width: 33.33%;
+		overflow: hidden;
+		padding: 0 0.6rem;
+		margin-bottom: 1rem;
+		@media screen and (max-width: $anchoMobile) {
+			width: 50%;
+		}
+		img {
+			width: 100%;
+		}
+		p {
+			background: #f7f7f7;
+			padding: 1rem;
+		}
+	}
+}

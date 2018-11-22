@@ -1,0 +1,150 @@
+.bloque_footer {
+	color: #fff;
+	margin-bottom: 0;
+	background: #101010;
+	height: auto;
+	position: relative;
+	float: left;
+	width: 100%;
+	section {
+		margin-bottom: 0;
+		padding: 3rem 0;
+		padding-bottom: 2rem;
+	}
+	ul {
+		padding: 0;
+		li {
+			color: white;
+			a {
+				color: white;
+				transition: 0.3s;
+				&:hover {
+					opacity: 0.5;
+				}
+			}
+		}
+	}
+	p {
+		color: white;
+		font-style: italic;
+		span {
+			color: gray;
+			font-style: normal;
+			margin-left: 0.5rem;
+		}
+		@media screen and (max-width: $anchoMobile) {
+			text-align: center;
+		}
+	}
+	h3 {
+		color: gray;
+		text-transform: uppercase;
+		font-size: 1rem;
+		margin-top: 0;
+		@media screen and (max-width: $anchoMobile) {
+			text-align: center;
+		}
+	}
+	.footer1{
+		background: #161616;
+		padding: 2.5rem 0;
+		.newsletter {
+			float: right;
+			.form-actions, .form-item {
+				float: left;
+			}
+			.link-wrapper{
+				display: none;
+			}
+			p {
+				font-family: $roboto;
+				line-height: 1.2rem;
+				color: white;
+				margin: 8px 1rem 0 0;
+				float: left;
+				font-size: 1.2rem;
+				margin-bottom: 1rem;
+				font-style: normal;
+				@media screen and (max-width: $anchoMobile) {
+					text-align: center;
+				}
+			}
+			.messages.error {
+				display: none;
+			}
+			form{
+				float: left;
+				@media screen and (max-width: $anchoMobile) {
+					width: 100%;
+					position: relative;
+				}
+			}
+			input[type=text], input[type=email] {
+				border: none;
+				width: 14rem;
+				color: black;
+				padding: 0 5px;
+				font-family: $roboto;
+				border-radius: 0;
+				outline: none;
+				float: left;
+				height:36px;
+				@media screen and (max-width: $anchoMobile) {
+					width: 100%;
+				}
+			}
+			input[type=submit] {
+				font-family: $roboto;
+				color: white;
+				background: $amarillo;
+				line-height: 1.9rem;
+				outline: 0;
+				padding: 0.2rem 1.8rem;
+				transition: 0.3s;
+				height: 36px;
+				float: left;
+				text-transform: uppercase;
+				border:0;
+				font-size: 1rem;
+				border-radius: 0;
+				&:hover {
+					background: white;
+					color: $cafe;
+				}
+				@media screen and (max-width: $anchoMobile) {
+					position: absolute;
+					right: 0;
+				}
+			}
+		}
+	}
+	.footer2 {
+		background: #101010;
+	}
+	.footer3 {
+		border: solid 1px #2b2b2b;
+		border-left: none;
+		border-right: none;
+		.social-media {
+			li {
+				margin-bottom: 0rem;
+				transition: 0.3s;
+				&:hover {
+					opacity: 0.6;
+				} 
+			}
+		}
+	}
+	.footer4 {
+		margin-bottom: 0;
+		ul {
+			text-align: center;
+			li {
+				margin-bottom: 0;
+			}
+			@media screen and (max-width: $anchoMobile) {
+				padding-bottom: 3rem;
+			}
+		}
+	}
+}

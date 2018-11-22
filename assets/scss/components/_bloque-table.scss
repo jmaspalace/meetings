@@ -1,0 +1,109 @@
+.bloque-table {
+	.table  {
+		border-collapse:collapse;
+		border-spacing:0;
+		border: solid 1px #e2e2e2;
+		td, td a{
+			font-family: $roboto;
+			font-size:13px;
+			padding:12px 10px;
+			border: none;
+			overflow:hidden;
+			word-break:normal;
+			font-weight:100;
+			text-align:center;
+			vertical-align:top;
+			color: #747476;
+			line-height: 1rem;
+			&:first-child {
+				color: $amarillo;
+				font-weight: normal;
+				&.subtitulo {
+					width: 100% !important;
+					h3 {
+						text-align: center;
+						font-size: 1.1rem;
+						margin: 0;
+					}
+				}
+			}
+		}
+		td a {
+			text-decoration: underline;
+			display: table;
+			cursor: pointer;
+			&:hover {
+				opacity: 0.5;
+			}
+			span {
+				opacity: 0.4;
+				background: url(../img/lupa.png) no-repeat center right;
+				width: 11px;
+				height: 11px;
+				position: relative;
+				margin-left: 4px;
+				cursor: pointer;
+				display: inline-block;
+			}
+		}
+		th{
+			font-family: $roboto;
+			font-size:12px;
+			font-weight:100;
+			padding:10px 5px;
+			border: none;
+			overflow:hidden;
+			word-break:normal;
+			background-color:#302f2d;
+			font-weight: normal;
+			color:#ffffff;
+			text-align:center;
+			vertical-align:top;
+			border: none;
+		}
+		tr {
+			border: solid 1px white;
+			&:hover {
+				background: #fff3dd;
+				border: solid 1px #ffe8b6;
+			}
+		}
+	}
+}
+
+@media (min-width: $anchoMobile) {
+	.bloque-table {
+		table {
+			width: 100%;
+		}
+
+		thead, tbody, tr, td, th { display: block; }
+
+		tr:after {
+			content: ' ';
+			display: block;
+			visibility: hidden;
+			clear: both;
+		}
+
+		thead th {
+			height: 50px;
+		}
+
+		tbody {
+			max-height: 400px;
+			overflow-y: auto;
+		}
+
+		tbody td, thead th {
+			float: left;
+			&:first-child {
+				width: 10% !important;
+			}
+		}
+	}
+}
+
+.fancybox-error, .fancybox-iframe {
+	background: black;
+}

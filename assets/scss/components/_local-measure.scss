@@ -1,0 +1,47 @@
+.bloque-local-measure {
+	margin-bottom: 0;
+	h2 {
+		text-align: center;
+		margin-bottom: 2rem;
+		color: $amarillo;
+	}
+	.lm-widget {
+		.lm-widget-controls {
+			text-align: center;
+			margin: 1.5rem 0;
+			margin-bottom: 0;
+		}
+		.lm-load-button {
+			color: $amarillo;
+			text-transform: uppercase;
+			letter-spacing: 2px;
+			font-weight: 100;
+			font-size: 1rem;
+			padding: 0.6rem 2rem;
+			border: 1px solid $amarillo;
+			cursor: pointer;
+			display: inline-block;
+			font-family: $roboto;
+			transition: 0.3s;
+			margin-bottom: 0.5rem;
+			&:hover {
+				background: white;
+				color: #192326;
+			}
+		}
+	}
+}
+
+.lm-widget .lm-postlist .lm-postlist-item .lm-postcard--widget {
+	border: none !important;
+	box-shadow: none !important;
+	border-radius: 0 !important;
+}
+
+.lm-widget .lm-widget-footer {
+	border: none !important;
+}
+
+.lm-widget .lm-widget-footer .lm-widget-link {
+	float: left !important;
+}

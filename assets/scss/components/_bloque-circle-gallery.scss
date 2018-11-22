@@ -1,0 +1,67 @@
+.bloque-circle-gallery {
+	ul {
+		padding: 0;
+		text-align: center;
+		li {
+			display: inline-block;
+			margin: 0 1rem;
+			list-style: none;
+			@media screen and (max-width: $anchoTablet) {
+				margin-bottom: 3rem;
+			}
+			p.titulo {
+				font-family: $umalight;
+				font-size: 1.3rem;
+			}
+			.rounded {
+				width: 180px;
+				height: 180px;
+				@media screen and (max-width: $anchoDesktop) {
+					width: 130px;
+					height: 130px;
+				}
+				@media screen and (max-width: $anchoTablet) {
+					width: 100px;
+					height: 100px;
+				}
+				@media screen and (max-width: $anchoMobile) {
+					width: 180px;
+					height: 180px;
+				}
+				img {
+					width: 100%;
+				}
+			}
+			a {
+				background: black;
+				padding: 0.7rem 1rem;
+				color: white;
+				top: -1rem;
+				position: relative;
+				text-transform: capitalize;
+				cursor: pointer;
+				&:hover {
+					background: $amarillo;
+				}
+				@media screen and (max-width: $anchoDesktop) {
+					padding: 0.4rem 0.7rem;
+				}
+				@media screen and (max-width: $anchoMobile) {
+					padding: 0.7rem 1rem;
+				}
+			}
+		}
+	}
+}
+
+.page-node-394 {
+	.bloque-circle-gallery {
+		ul {
+			li {
+				p.titulo {
+					font-size: 1.1rem;
+				}
+			}
+		}
+	}
+}

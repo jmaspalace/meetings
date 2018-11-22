@@ -1,0 +1,18 @@
+name = Views for Webform A/B Testing
+description = "Views for managing Webform AB tests."
+core = 7.x
+package = Webform Extra
+
+dependencies[] = webform_ab
+dependencies[] = views
+
+files[] = webform_ab_views.module
+files[] = webform_ab_views.views.inc
+
+; Views handlers
+files[] = views/handlers/webform_ab_views_handler_field_operations.inc
+; Information added by Drupal.org packaging script on 2018-05-23
+version = "7.x-2.4"
+core = "7.x"
+project = "webform_ab"
+datestamp = "1527094384"

@@ -1,0 +1,527 @@
+<?php 
+
+function mice_config_init( ){    
+
+ ini_set('memory_limit', '-1');
+
+}
+
+
+function mice_config_page_alter(&$page) {
+  global $language;
+  drupal_add_js(array(
+
+      'mice_config' => array(
+        'language' => $language->language,
+      ),
+    ),
+    array('type' => 'setting')
+  );
+
+}
+
+
+function mice_config_form_alter(&$form, &$form_state, $form_id) {   
+  global $language; 
+
+  if (isset($form['#node_edit_form']) && !empty($form['nid']['#value']) && $form['type']['#value']!="webform"   ) {    
+   if ($language->language!=$form['language']['#default_value']) {    
+    $path = current_path();    
+    $path="/".$form['language']['#default_value']."/".$path;
+    header('location: '.$path);
+  }
+}    
+}
+
+
+function mice_config_menu(){
+
+  $menus[ "admin/config/mice_settings" ] = array(
+
+    'title' => 'Configuracion MICE',
+    'description' => 'Configuraciones custom del site',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mice_config_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+
+  );
+
+  $menus['consultar/agente'] = array(
+    'title' => 'Buscar agente según state ingresado',
+    'page callback' => 'buscar_agente',
+    'type' => MENU_SUGGESTED_ITEM,
+    'access arguments' => array('access content'),
+  );
+
+  $menus['traer/departamentos'] = array(
+    'title' => 'Buscar agente según state ingresado',
+    'page callback' => 'traer_departamentos',
+    'type' => MENU_SUGGESTED_ITEM,
+    'access arguments' => array('access content'),
+  );
+
+  $menus['send/newsletter'] = array(
+    'title' => 'newsletter',
+    'page callback' => 'llenar_formulario',
+    'type' => MENU_SUGGESTED_ITEM,
+    'access arguments' => array('access content'),
+  );
+
+  $menus['send/resort'] = array(
+    'title' => 'resort',
+    'page callback' => 'traer_resort',
+    'type' => MENU_SUGGESTED_ITEM,
+    'access arguments' => array('access content'),
+  ); 
+
+  $menus['get/resorts'] = array(
+    'title' => 'resorts menu',
+    'page callback' => 'traer_resorts_menu',
+    'type' => MENU_SUGGESTED_ITEM,
+    'access arguments' => array('access content'),
+  );
+
+  return $menus;
+
+}
+
+function traer_resorts_menu(){
+  $lg=$_POST['lg'];
+  $envio_resort=0;
+  $vocabulary = taxonomy_vocabulary_machine_name_load('lugares');
+  $lugares_terms = entity_load('taxonomy_term', FALSE, array('vid' => $vocabulary->vid,'language' => $lg));   
+  $contenido="";
+  foreach ($lugares_terms as $lugar) {  
+   
+    $view = views_get_view('resort_menu');
+    if ($_POST['marca']==0) {
+          $view->set_display('block_1');
+          $view->set_arguments(array($lugar->tid));
+    }else{
+          $view->set_display('block');      
+          $view->set_arguments(array($lugar->tid,$_POST['marca']));          
+    }    
+    
+    $view->execute(); 
+    if (count($view->result)>0) {  
+    $cumple_general=false;        
+    foreach ($view->result as $room) { 
+          $item=$room->_field_data['nid']['entity'];                    
+           switch ($_POST['rooms']) {
+            case '100':
+            if ($item->field_rooms["und"][0]["value"]<100)  {
+                $cumple_general=true;
+            }              
+              break;
+            case '400':
+              if ($item->field_rooms["und"][0]["value"]>100 && $item->field_rooms["und"][0]["value"]<400)  {
+                $cumple_general=true;
+              }
+              break;
+            case '401':
+              if ($item->field_rooms["und"][0]["value"]>400)  {
+                $cumple_general=true;
+              }
+              break;              
+            
+            default:
+              $cumple_general=true;
+              break;
+          }            
+    }
+
+    if ($cumple_general) {
+    $envio_resort=1;
+    $contenido.='<div class="col-md-4 col-sm-4 col-xs-12">';
+    $contenido.='<p class="title"> '.$lugar->name.' </p>';
+    $contenido.='<ul>';        
+        foreach ($view->result as $room) {      
+          $item=$room->_field_data['nid']['entity'];          
+          $cumple=false;          
+            switch ($_POST['rooms']) {
+            case '100':
+            if ($item->field_rooms["und"][0]["value"]<100)  {
+                $cumple=true;
+            }              
+              break;
+            case '400':
+              if ($item->field_rooms["und"][0]["value"]>100 && $item->field_rooms["und"][0]["value"]<400)  {
+                $cumple=true;
+              }
+              break;
+            case '401':
+              if ($item->field_rooms["und"][0]["value"]>400)  {
+                $cumple=true;
+              }
+              break;              
+            
+            default:
+              $cumple=true;
+              break;
+          }    
+           if ($cumple) {                                            
+          $contenido.='<li>';
+          $contenido.='<a href="'.$item->field_call_to_action["und"][0]["url"].'">'.$room->node_title.' </a>';
+          $contenido.='<p class="number_rooms"><span>'.$item->field_rooms["und"][0]["value"].'</span>'.t("Rooms").'</p>';
+          $contenido.='</li>';  
+          }        
+        }        
+    $contenido.='</ul>';
+    $contenido.='</div>';
+  }
+  }
+    
+  }
+
+  if ($envio_resort) {
+    print $contenido;
+  }else{
+    print 0;
+  }
+
+}
+
+function traer_resort(){
+  $view = views_get_view('resorts');
+  $view->set_display('block');
+  $view->set_arguments(array($_POST['tid']));
+  $view->execute();
+  if (count($view->result)<1) {
+   print 0;
+ } else{
+  $resultado=$view->result[0]->_field_data['nid']['entity'];   
+  $json=array();
+  $json['content-img']='<img class="img-background" src="'.file_create_url($resultado->field_image['und'][0]['uri']).'">';
+  $json['box']='<a href="" target="_blank" class="enlace">'.$resultado->field_call_to_action['und'][0]['title'].'</a>';
+  $json['info-resorts']='<li><div class="subtitulo-h4">'.$resultado->field_titulo['und'][0]['value'].'</div>
+  <div class="subtitulo-h2">'.$resultado->title.'</div>
+  <div class="subtitulo-h3">'.$resultado->field_subtitulo['und'][0]['value'].'</div>
+  <div class="text">'.$resultado->body['und'][0]['value'].'</div>
+  <div class="link">'.$resultado->field_call_to_action['und'][0]['url'].'</div>
+  <img class="img-background" src="'.file_create_url($resultado->field_image['und'][0]['uri']).'"></li>';
+  print json_encode($json); 
+}
+}
+
+function llenar_formulario(){
+
+  if (isset($_POST['email_newsletter']) && $_POST['email_newsletter']!=""  ) {
+   
+
+  $node=node_load(292);
+  global $user;
+
+  // Keys in this array are the same keys on the fields in the webform
+  $data = array(
+    'subscribe_to_our_newsletter' => $_POST['email_newsletter'],
+    'terms_and_conditions' => $_POST['chebox_Terms']== 1? 'y' : '' ,
+    'sign_me_up' => $_POST['chebox_sing'] == 1? 'y' : '' ,
+  );
+
+  module_load_include('inc', 'webform', 'webform.module');
+  module_load_include('inc', 'webform', 'includes/webform.submissions');
+  
+  // This methods will arrange $data in the right way
+  $data = _webform_client_form_submit_flatten($node, $data);
+  $data = webform_submission_data($node, $data);
+
+  $submission = (object) array(
+    'nid' => $node->nid,
+    'uid' => $user->uid,
+    'sid' => NULL,
+    'submitted' => REQUEST_TIME,
+    'completed' => REQUEST_TIME,
+    'remote_addr' => ip_address(),
+    'is_draft' => FALSE,
+    'data' => $data,
+  );
+  
+  $error=false;
+  try {
+    webform_submission_insert($node, $submission);
+    webform_submission_send_mail($node,$submission);
+  } catch (Exception $e) {
+    $error=true;
+  }
+  
+  if ($error){
+    print 0;
+  }else{
+    print 1;
+  }
+  
+  }
+  
+}
+
+function traer_departamentos(){
+    $taxonomy=taxonomy_term_load($_POST['idPais']);
+    $country_id=$taxonomy->field_iso['und'][0]['value'];    
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'taxonomy_term')
+          ->entityCondition('bundle','ciudades_iso')
+          ->fieldCondition('field_iso', 'value', $country_id, '=');
+    $query->propertyOrderBy('name', 'ASC');
+    $result=$query->execute();    
+
+    $option="<option selected='selected' disabled value='0'>Select State * </option>";
+    foreach ($result as $country) {        
+        foreach ($country as $key ) {
+            $country_tax=taxonomy_term_load($key->tid);
+            $option.="<option value=".$country_tax->tid.">".$country_tax->name."</option>";                       
+        }      
+    }    
+    print $option;
+}
+
+
+function traer_estados(){
+  $tid=$_POST['tid'];
+  $childrens=taxonomy_get_children($tid);
+  $options="";
+  foreach ($childrens as $item) {
+    $options.= '<option value="'.$item->tid.'">'.$item->name.'</option>';
+  }
+
+  print $options;
+
+}
+
+function buscar_agente(){
+  $tid=$_POST['tid'];  
+  $view = views_get_view('agent');
+  $view->set_display('block');
+  $view->set_arguments(array($tid));
+  $view->execute();
+  if (count($view->result)>0) {   
+   $agentes=array(); 
+   foreach ($view->result as $item) {
+     $item_corto=$item->_field_data['nid']['entity'];
+     $agente=array(
+      "nombre"=>$item_corto->title,
+      "agencia"=>$item_corto->body['und'][0]['value'],
+      "correo"=>$item_corto->field_titulo['und'][0]['value']
+    );
+     array_push($agentes, $agente);
+   }
+   echo json_encode($agentes);
+ }else{
+  $mensaje="<li class='shucks'><h2 class='titulo_bloque'>Aww, shucks!</h2><p>There doesn't seem to be a Wedding Specialist in your area at the moment. <strong>Please call (877) 725-4933 </strong> to get in contact with someone who can help you with your fabulous wedding.</p></li>";
+  $retorno=array("nombre"=>0,"mensaje"=>$mensaje);
+  echo json_encode($retorno);
+}
+
+}
+
+
+
+
+function submit_form_settings( $form, &$form_state ){
+
+  if( $_POST ){
+    variable_set( "url-facebook", $_POST[ "url-facebook" ] );
+    variable_set( "url-instagram", $_POST[ "url-instagram" ] );
+    variable_set( "url-linkedin", $_POST[ "url-linkedin" ] );
+    variable_set( "url-twitter", $_POST[ "url-twitter" ] );
+    variable_set( "url-youtube", $_POST[ "url-youtube" ] );
+    variable_set( "url-boton-en", $_POST[ "url-boton-en" ] );
+    variable_set( "url-boton-es", $_POST[ "url-boton-es" ] );
+    variable_set( "url-boton-pt", $_POST[ "url-boton-pt" ] );
+    variable_set( "phone-es", $_POST[ "phone-es" ] );
+    variable_set( "phone-en", $_POST[ "phone-en" ] );
+    variable_set( "phone-pt", $_POST[ "phone-pt" ] );
+    variable_set( "politica-es", $_POST[ "politica-es" ] );
+    variable_set( "politica-en", $_POST[ "politica-en" ] );
+    variable_set( "politica-pt", $_POST[ "politica-pt" ] );
+
+  }
+
+}
+
+function mice_config_admin_settings( ){
+
+  $form = array();
+
+  $form[ "url-facebook" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('URL Facebook'),
+    '#value' => variable_get('url-facebook', ""),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t("URL de destino para el botón de facebook"),
+    '#required' => FALSE,
+
+  );
+
+  $form[ "url-instagram" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('URL Instagram'),
+    '#value' => variable_get('url-instagram', ""),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t("URL de destino para el botón de instagram"),
+    '#required' => FALSE,
+
+  );
+
+  $form[ "url-linkedin" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('URL Linkedin'),
+    '#value' => variable_get('url-linkedin', ""),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t("URL de destino para el botón de Linkedin"),
+    '#required' => FALSE,
+
+  );
+
+  $form[ "url-twitter" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('Twitter url'),
+    '#value' => variable_get('url-twitter', ""),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t("URL de destino para el botón de twitter"),
+    '#required' => FALSE,
+
+  );
+
+  $form[ "url-youtube" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('Youtube url'),
+    '#value' => variable_get('url-youtube', ""),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t("URL de destino para el botón de youtube"),
+    '#required' => FALSE,
+
+  );
+
+  $form[ "url-boton-en" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('URL Boton request for proposal EN'),
+    '#value' => variable_get('url-boton-en', ""),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t("URL de destino para el botón 'Request For Proposal' en inglés "),
+    '#required' => TRUE,
+
+  );
+
+  $form[ "url-boton-es" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('URL Boton request for proposal ES'),
+    '#value' => variable_get('url-boton-es', ""),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t("URL de destino para el botón 'Request For Proposal' en español "),
+    '#required' => TRUE,
+
+  );
+
+  $form[ "url-boton-pt" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('URL Boton request for proposal ES'),
+    '#value' => variable_get('url-boton-pt', ""),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t("URL de destino para el botón 'Request For Proposal' en portugues "),
+    '#required' => TRUE,
+
+  );
+
+  $form[ "phone-en" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('Primer número teléfonico para inglés'),
+    '#value' => variable_get('phone-en', ""),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t("Primer número teléfonico para inglés"),
+    '#required' => TRUE,
+
+  );
+
+  $form[ "phone-es" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('Primer número teléfonico para español'),
+    '#value' => variable_get('phone-es', ""),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t("Primer número teléfonico para español"),
+    '#required' => TRUE,
+
+  );
+
+  $form[ "phone-pt" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('Primer número teléfonico para portugues'),
+    '#value' => variable_get('phone-pt', ""),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t("Primer número teléfonico para portugues"),
+    '#required' => TRUE,
+
+  );
+
+  $form[ "politica-es" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('Nodo para politicas en español'),
+    '#value' => variable_get('politica-es', ""),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t("Nodo para politicas en español"),
+    '#required' => TRUE,
+
+  );
+
+  $form[ "politica-en" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('Nodo para politicas en inglés'),
+    '#value' => variable_get('politica-en', ""),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t("Nodo para politicas en inglés"),
+    '#required' => TRUE,
+
+  );
+
+  $form[ "politica-pt" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('Nodo para politicas en portugues'),
+    '#value' => variable_get('politica-pt', ""),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t("Nodo para politicas en portugues"),
+    '#required' => TRUE,
+
+  );
+
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+
+  $form[ "#submit" ][] = "submit_form_settings";
+
+  return $form;
+
+}
+
+
+

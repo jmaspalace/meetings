@@ -1,0 +1,121 @@
+<?php
+
+
+function menu_link_cdi_menu() {
+  $items = array();
+
+  $items['admin/config/content/menu_link_cdi'] = array(
+  'title' => t('Configuración de los enlaces del menú'),
+  'description' => t('Configura los parametros para actualizar los enlaces del menú'),
+  'page callback' => 'drupal_get_form',
+  'page arguments' => array('menu_link_cdi_admin'),
+  'access arguments' => array('administer site configuration'),
+  );
+
+
+  return $items;
+}
+
+
+function menu_link_cdi_obtener_menus(){
+  $result = db_select('menu_custom', 'm');
+  $result->distinct('m.menu_name');
+  $result->fields('m');
+  $result_query = $result->execute();
+
+  $menus=array();
+
+  while ($item=$result_query->fetchAssoc()) {
+    $key=$item['menu_name'];
+    $value=$item['menu_name'];
+    $menus[$key]=$value;
+  }
+  return $menus;
+}
+
+
+function menu_link_cdi_admin() {
+
+
+  $form = array();
+
+  $form['type_group'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Tipo de contenido'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,  
+    );
+
+  $form['type_group']['url_actual'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese la URL antigua'),
+    '#default_value' => variable_get('url_actual', ""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Esta URL es la que tienen actualmente los menús"),
+    '#required' => TRUE,
+    ); 
+
+  $form['type_group']['url_nueva'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese la URL nueva'),
+    '#default_value' => variable_get('url_nueva', ""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Esta URL será la nueva para los enlaces de los menús"),
+    '#required' => TRUE,
+    );
+
+
+  $menus=menu_link_cdi_obtener_menus();
+
+  $form['menu_group']['menu_escogido'] = array(
+    '#title' => t('Menús'),
+    '#type' => 'select', 
+    '#default_value' => variable_get('menus', "Seleccione un menú"),
+    '#options' => $menus,
+    '#required' => TRUE
+    );
+
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Actualizar enlaces '),
+    '#submit' => array('menu_link_cdi_refresh')
+    );
+
+
+  return system_settings_form($form);
+}
+
+
+function menu_link_cdi_refresh(){
+
+
+$antiguo=variable_get('url_actual');
+$nuevo=variable_get('url_nueva');
+$menu = variable_get('menu_escogido');
+
+$mlids = db_query("SELECT mlid FROM {menu_links}  WHERE menu_name = :menu", array(':menu' => $menu))->fetchCol();
+if ($mlids) {
+  // Loop through the matching menu items and update them.
+  foreach ($mlids as $mlid) {
+
+        if ($menu_link = menu_link_load($mlid)) {
+        $enlace_actual=$menu_link['link_path'];
+        $nuevo_enlace=str_replace($antiguo, $nuevo, $enlace_actual);
+        $menu_link['link_path']=$nuevo_enlace; 
+        $testing=menu_link_save($menu_link); 
+        
+        }
+  }
+}
+
+
+  drupal_set_message("Enlaces actualizados con exito","status");
+
+}
+
+
+
+

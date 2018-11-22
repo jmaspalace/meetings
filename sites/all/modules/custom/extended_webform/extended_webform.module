@@ -1,0 +1,992 @@
+<?php
+  /**
+   * Development Only
+   */
+  /*error_reporting(E_ALL);
+  ini_set('display_errors', TRUE);
+  ini_set('display_startup_errors', TRUE);*/
+/**
+ * 20150928 ENH validacion de formularios de video y brochure
+ * 20150920 ENH fabian trabajo con el wsdl de confirmacion en los dos entornos. Dev y Prod
+ */
+
+  /* Implements hook_boot **/
+  /* Implements hook_boot **/
+  function extended_webform_boot(){
+
+    global $page_sources;
+    $enviroment = variable_get("enviroment_type", "development");
+
+    /* 20150804 ENH fabian Defino los parametros de conexion del webservice **/
+    if( $enviroment == "development" ){
+
+      /* 20150922 ENH defino wsdl para confirmar un LEAD **/
+      //echo 'dev';exit;
+      variable_set("wsdl_confirm","http://dev-micepalace.ariadna.co/wsdl/DEV_20170902_SI_OS_CREATEService.wsdl");
+      variable_set("wsdl","http://dev-micepalace.ariadna.co/wsdl/DEV_20170902_SI_OS_CREATEService.wsdl");
+      variable_set("usr","piwebservice");
+      variable_set("passwd","iFc@W#b-P1");
+    }
+    elseif( $enviroment == "production" ){
+      /* 20150922 ENH defino wsdl para confirmar un LEAD **/
+      //echo 'pro';exit;
+      variable_set("wsdl_confirm","https://www.palacedifference.com/wsdl/DEV_20170902_SI_OS_CREATEService.wsdl");
+      variable_set("wsdl","https://www.palacedifference.com/wsdl/DEV_20170902_SI_OS_CREATEService.wsdl");
+      variable_set("usr","piwebservice");
+      variable_set("passwd","P913571");
+    }
+    else{
+      /* Disable SAP **/
+      variable_set("wsdl","");
+      variable_set("wsdl_confirm","");
+      variable_set("usr","");
+      variable_set("passwd","");
+    }
+
+    /**
+     * 20150824 Setting page sources
+     */
+    $page_sources = array(
+      "wedding_website" => "W11",
+      "leblanc_website" => "G37",
+      "moon_palace_website" => "G38",
+      "social_media_contest" => "G39",
+      "wedding_brochure" => "G28",
+      "palace_website" => "G14"
+    );
+
+    /**
+     * Detecting page source
+     */
+    $server_name = $_SERVER["SERVER_NAME"];
+    switch ( $server_name ) {
+
+      case 'weddings.palaceresorts.com':
+      case 'weddings.ariadna.us':
+      case (preg_match('/weddings\.palaceresorts\.com/', $server_name) ? true : false):
+        variable_set("page_source","wedding_website");
+      break;
+
+      case 'www.moonpalacecancun.com':
+      case 'moonpalace.ariadna.us':
+        variable_set("page_source","moon_palace_website");
+      break;
+
+      case 'www.leblancsparesort.com':
+      case 'leblancpre.ariadna.us':
+        variable_set("page_source","leblanc_website");
+      break;
+
+      default:
+      variable_set("page_source","testing_site");
+      break;
+
+    }
+
+  }
+
+
+function extended_webform_webform_submission_insert($node, $submission) {
+     //$inputs=array();
+  if (!empty($node->field_url_hubspot['und'][0]['value'])) {
+
+     ksort($node->webform['components']);
+    foreach ($node->webform['components'] as $form) {
+          //$input="<input type=text name=".$form['form_key']." value= >";
+          //array_push($inputs, $input);
+      if ($form['type']!="fieldset") {
+        $post_data[$form['form_key']] = "";
+      }
+
+    }
+    $values=array();
+    ksort($submission->data);
+
+foreach ($submission->data as $info) {
+    $data=$info[0];
+    array_push($values,$data);
+}
+$i=0;
+foreach ($post_data as $key => $value) {
+  $post_data[$key]=$values[$i];
+  $i++;
+}
+    $post_data['utm_medium']=$_SESSION['utm_medium_palace'];
+    $post_data['source']=$_SESSION['utm_source_palace'];
+    $post_data['utm_term']=$_SESSION['utm_term_palace'];
+    $post_data['utm_content']=$_SESSION['utm_content_palace'];
+    $post_data['utm_campaign']=$_SESSION['utm_campaign_palace'];
+//traverse array and prepare data for posting (key1=value1)
+foreach ( $post_data as $key => $value) {
+    $post_items[] = $key . '=' . $value;
+}
+
+//create the final string to be posted using implode()
+$post_string = implode ('&', $post_items);
+
+
+//create cURL connection
+$curl_connection = curl_init($node->field_url_hubspot['und'][0]['value']);
+
+//set options
+curl_setopt($curl_connection, CURLOPT_CONNECTTIMEOUT, 30);
+curl_setopt($curl_connection, CURLOPT_USERAGENT,
+  "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)");
+curl_setopt($curl_connection, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($curl_connection, CURLOPT_SSL_VERIFYPEER, false);
+curl_setopt($curl_connection, CURLOPT_FOLLOWLOCATION, 1);
+
+//set data to be posted
+curl_setopt($curl_connection, CURLOPT_POSTFIELDS, $post_string);
+
+//perform our request
+$result = curl_exec($curl_connection);
+
+//show information regarding the request
+/*print_r(curl_getinfo($curl_connection));
+echo curl_errno($curl_connection) . '-' .
+                curl_error($curl_connection);*/
+
+//close the connection
+curl_close($curl_connection);
+}
+
+}
+
+  /**
+   * Implements hook_init
+   * 20150820 ENH fabian Cambio la forma de incluir la libreria nusoap. Ahora esta dentro del modulo
+   */
+  function extended_webform_init(){
+
+    global $language;
+    $lib = DRUPAL_ROOT . '/' . drupal_get_path("module", "extended_webform") . '/libs/nusoap/nusoap.php';
+    require_once $lib;
+
+    /**
+     * 20150824 Validating path for email confirmation
+     */
+    $path = current_path();
+    //$path_alias = drupal_lookup_path('alias',$path);
+    $valid_path_to_confirm = variable_get("sap_confirmation_$language->language","");
+
+    if( $valid_path_to_confirm != "" && drupal_valid_path($valid_path_to_confirm) && $path == $valid_path_to_confirm ){
+
+      validateSAPEmail();
+    }
+  }
+
+  /**
+   * Implements hook_help
+   */
+  function extended_webform_help($path, $arg){
+
+    switch ($path) {
+      case "admin/help#extended_webform":
+        return '<p>' . t("Modifies several palace webforms") . '</p>';
+        break;
+    }
+  }
+
+  /**
+   * Implements hook_menu
+   */
+  function extended_webform_menu(){
+
+    $items = array();
+
+    $items["admin/config/content/extended_webform"] = array(
+      "title" => "Extended Webform",
+      "description" => "Palace Extended Webform Configuration",
+      "page callback" => "drupal_get_form",
+      "page arguments" => array("extended_webform_form"),
+      "access arguments" => array("administer site configuration access extended_webform content")
+      );
+
+    return $items;
+  }
+
+  /**
+   * Implements hook_form
+   */
+  function extended_webform_form(){
+
+    $form = array();
+    /**
+     * Getting site languages
+     */
+    $languages = language_list('enabled');
+    /**
+     * Getting all site's webforms
+     */
+    $webform_titles = db_query("SELECT n.nid, n.title FROM {node} n WHERE n.type = 'webform' AND n.status = 1 ORDER BY n.title");
+    $webforms = array();
+
+    foreach ( $webform_titles as $i => $wfn ) {
+
+      $webforms[$wfn->nid] = $wfn->title;
+    }
+
+    /**
+     * Tabs grouping
+     */
+    $form['group_tabs'] = array(
+      '#type'     => 'horizontal_tabs',
+      '#attached' => array('library' => array(array('field_group', 'horizontal-tabs'))), // Converts fieldsets into tabs
+    );
+
+
+    /**
+     * Tab: Request Information Form
+     */
+    $form['group_two'] = array(
+      '#type'  => 'fieldset',
+      '#title' => t('Request Information Form'),
+      '#group' => 'group_tabs'
+    );
+
+    /**
+     * Tab: Download Brochure
+     */
+    $form['group_three'] = array(
+      '#type'  => 'fieldset',
+      '#title' => t('Download Brochure'),
+      '#group' => 'group_tabs'
+    );
+
+    /**
+     * Tab: Contact Us
+     */
+    $form['group_three_contact'] = array(
+      '#type'  => 'fieldset',
+      '#title' => t('Contact Us'),
+      '#group' => 'group_tabs'
+    );
+
+    /**
+     * Tab: Video Form
+     */
+    $form['group_three_video'] = array(
+      '#type'  => 'fieldset',
+      '#title' => t('Video Form'),
+      '#group' => 'group_tabs'
+    );
+
+    /**
+     * Tab: Enviroment Switch
+     */
+    $form['group_enviroment'] = array(
+      '#type'  => 'fieldset',
+      '#title' => t('Module Enviroment'),
+      '#group' => 'group_tabs'
+    );
+
+    $form['group_enviroment']["enviroment_type"] = array(
+      "#type" => "radios",
+      "#title" => t("Envirement Type"),
+      "#options" => array("development" => "Development", "production" => "Production", "disabled" => "Disable"),
+      "#default_value" => variable_get("enviroment_type", "development"),
+      '#group' => 'group_enviroment'
+    );
+
+    /**
+     * Tab: SAP Grouping
+     */
+    $form['group_sap'] = array(
+      '#type'  => 'fieldset',
+      '#title' => t('SAP Confirmation Page'),
+      '#group' => 'group_tabs'
+    );
+
+    $form['group_two']["request_info_form"] = array(
+      "#type" => "select",
+      "#options" => $webforms,
+      "#empty_option" => "Select the webform",
+      "#title" => t("Request information form"),
+      "#default_value" => variable_get("request_info_form", ""),
+      "#description" => t("Wich is the request information form?"),
+      "#required" => FALSE,
+      '#group' => 'group_two'
+    );
+
+    $form['group_three']["download_brochure_form"] = array(
+      "#type" => "select",
+      "#options" => $webforms,
+      "#empty_option" => "Select the webform",
+      "#title" => t("Download Brochure Form"),
+      "#default_value" => variable_get("download_brochure_form", ""),
+      "#description" => t("Wich is the download brochure form?"),
+      '#group' => 'group_three'
+    );
+
+    $form['group_three_contact']["contact_us_form"] = array(
+      "#type" => "select",
+      "#options" => $webforms,
+      "#empty_option" => "Select the webform",
+      "#title" => t("Contact Us Form"),
+      "#default_value" => variable_get("contact_us_form", ""),
+      "#description" => t("Wich is the contact us form?"),
+      '#group' => 'group_three_contact'
+    );
+
+    $form['group_three_video']["video_form"] = array(
+      "#type" => "select",
+      "#options" => $webforms,
+      "#empty_option" => "Select the webform",
+      "#title" => t("Video Form"),
+      "#default_value" => variable_get("video_form", ""),
+      "#description" => t("Wich is the video form?"),
+      '#group' => 'group_three_video'
+    );
+
+    /**
+     * Printing field languages
+     */
+    if( !empty($languages) ){
+
+      foreach($languages[1] as $lang){
+
+        $form['group_two']["request_info_form_redirect_$lang->language"] = array(
+          "#type" => "textfield",
+          "#title" => t("URL Thank You Page $lang->name"),
+          "#default_value" => variable_get("request_info_form_redirect_$lang->language", ""),
+          "#size" => 20,
+          "#maxlength" => 150,
+          "#description" => t("Thank You Page for $lang->name language"),
+          "#required" => FALSE,
+          '#group' => 'group_two'
+        );
+
+        $form['group_three']["download_form_redirect_$lang->language"] = array(
+          "#type" => "textfield",
+          "#title" => t("URL Thank You Page $lang->name"),
+          "#default_value" => variable_get("download_form_redirect_$lang->language", ""),
+          "#size" => 20,
+          "#maxlength" => 150,
+          "#description" => t("Thank You Page for $lang->name language"),
+          "#required" => FALSE,
+          '#group' => 'group_three'
+        );
+
+        $form['group_three_contact']["contact_us_form_redirect_$lang->language"] = array(
+          "#type" => "textfield",
+          "#title" => t("URL Thank You Page $lang->name"),
+          "#default_value" => variable_get("contact_us_form_redirect_$lang->language", ""),
+          "#size" => 20,
+          "#maxlength" => 150,
+          "#description" => t("Thank You Page for $lang->name language"),
+          "#required" => FALSE,
+          '#group' => 'group_three_contact'
+        );
+
+        $form['group_three_video']["video_form_redirect_$lang->language"] = array(
+          "#type" => "textfield",
+          "#title" => t("URL Thank You Page $lang->name"),
+          "#default_value" => variable_get("video_form_redirect_$lang->language", ""),
+          "#size" => 20,
+          "#maxlength" => 150,
+          "#description" => t("Thank You Page for $lang->name language"),
+          "#required" => FALSE,
+          '#group' => 'group_three_video'
+        );
+
+      }
+
+      /**
+       * Valida si envio o no UTMS en el formulario de request information
+       */
+
+      //echo 'llegue aca';exit;
+      $form['group_two']["request_info_form_mail_utms"] = array(
+        '#type' => 'radios',
+        '#title' => t('UTMs in mail message'),
+        '#default_value' => variable_get('request_info_form_mail_utms', 0),
+        '#options' => array(t('Disabled'), t('Enabled'))
+      );
+
+      /**
+       * Valida si envio o no UTMS en el formulario de download brochure
+       */
+      $form['group_three']["download_form_mail_utms"] = array(
+        '#type' => 'radios',
+        '#title' => t('UTMs in mail message'),
+        '#default_value' => variable_get('download_form_mail_utms', 0),
+        '#options' => array(t('Disabled'), t('Enabled'))
+      );
+
+      /**
+       * URL for SAP confirmation
+       */
+      foreach($languages[1] as $lang){
+        //echo 'aca';exit;
+        $form['group_sap']["sap_confirmation_$lang->language"] = array(
+          "#type" => "textfield",
+          "#title" => t("URL SAP confirmation $lang->name"),
+          "#default_value" => variable_get("sap_confirmation_$lang->language", ""),
+          "#size" => 20,
+          "#maxlength" => 150,
+          "#description" => t("SAP Confirmation Page for $lang->name language"),
+          '#group' => 'group_sap'
+        );
+      }
+    }
+
+    $form["submit"] = array(
+
+      "#type" => "submit",
+      "#value" => "Submit"
+      );
+
+    //echo 'aca';exit;
+
+    return $form;
+  }
+
+  /**
+   * Implements hook_form_validate
+   */
+  function extended_webform_form_validate($form, &$form_state){
+
+    //print_r($form);exit;
+
+    /**
+     * Getting site languages
+     */
+    $languages = language_list('enabled');
+
+    /*if( !empty($languages) ){
+
+      foreach($languages[1] as $lang){
+
+        /* Validating request information redirect
+        if( !drupal_valid_path( $form_state["values"]["request_info_form_redirect_$lang->language"] ) ){
+          form_set_error("request_info_form_redirect_$lang->language", t("Invalid request information $lang->name URL"));
+        }
+
+        /* Validating download brochure redirect *
+        if( !drupal_valid_path( $form_state["values"]["download_form_redirect_$lang->language"] ) ){
+          form_set_error("download_form_redirect_$lang->language", t("Invalid download brochure $lang->name URL"));
+        }
+
+        /* Validating contact us redirect *
+        if( !drupal_valid_path( $form_state["values"]["contact_us_form_redirect_$lang->language"] ) ){
+          form_set_error("contact_us_form_redirect_$lang->language", t("Invalid contact us $lang->name URL"));
+        }
+
+        /* Validating video redirect *
+        if( !drupal_valid_path( $form_state["values"]["video_form_redirect_$lang->language"] ) ){
+          form_set_error("video_form_redirect_$lang->language", t("Invalid video $lang->name URL"));
+        }
+
+        /* Validating SAP confirmation page *
+        if( $form_state["values"]["sap_confirmation_$lang->language"] != "" &&
+          !drupal_valid_path( $form_state["values"]["sap_confirmation_$lang->language"] ) ){
+          form_set_error("sap_confirmation_$lang->language", t("Invalid SAP $lang->name URL"));/* 20150824 Validating SAP confirmation page**
+        }
+      }
+    }*/
+
+  }
+
+  /**
+   * Keeping admin form data
+   */
+  function extended_webform_form_submit($form, &$form_state){
+
+    /**
+     * Getting site languages
+     */
+    $languages = language_list('enabled');
+
+    if( !empty($languages) ){
+
+      foreach($languages[1] as $lang){
+      variable_set("request_info_form_redirect_$lang->language", $form_state["values"]["request_info_form_redirect_$lang->language"]); /* Request Information Redirect**/
+      variable_set("download_form_redirect_$lang->language", $form_state["values"]["download_form_redirect_$lang->language"]); /* Download Brochure Redirect**/
+      variable_set("contact_us_form_redirect_$lang->language", $form_state["values"]["contact_us_form_redirect_$lang->language"]); /* Contact Us Redirect**/
+      variable_set("video_form_redirect_$lang->language", $form_state["values"]["video_form_redirect_$lang->language"]); /* Video Redirect**/
+      variable_set("sap_confirmation_$lang->language", $form_state["values"]["sap_confirmation_$lang->language"]); /* 20150824 Keeping SAP confirmation page**/
+      }
+    }
+
+    variable_set("request_info_form", $form_state["values"]["request_info_form"]);
+    variable_set("download_brochure_form", $form_state["values"]["download_brochure_form"]);
+    variable_set("contact_us_form", $form_state["values"]["contact_us_form"]);
+    variable_set("video_form", $form_state["values"]["video_form"]);
+
+    variable_set("enviroment_type", $form_state["values"]["enviroment_type"]);
+    variable_set("request_info_form_mail_utms", $form_state["values"]["request_info_form_mail_utms"] );
+    variable_set("download_form_mail_utms", $form_state["values"]["download_form_mail_utms"] );
+  }
+
+  /**
+   * extended_webform_mail_alter
+   * Altera el comportamiento normal en el envio de correos.
+   */
+  function extended_webform_mail_alter(&$message) {
+
+    $download_brochure_form = variable_get("download_brochure_form");
+    $request_info_form = variable_get("request_info_form");
+    $request_info_form_mail_utms = intval( variable_get("request_info_form_mail_utms", 0 ) );
+    $download_form_mail_utms = intval( variable_get("download_form_mail_utms", 0 ) );
+
+    if ( $message['module'] == 'webform' && $message['id'] == 'webform_submission' ){
+
+      /*** Adding UTM's data to a specific webforms ***/
+      if( ( $download_form_mail_utms == 1 && $download_brochure_form == $message['params']['node']->nid ) ||
+          ( $request_info_form_mail_utms == 1 && $request_info_form == $message['params']['node']->nid ) ){
+
+        $message ['body'] = array();
+        $message ['body'][] = preg_replace("/(?=\n\nThe results of this submission may be viewed at)/","UTM_SOURCE: $_SESSION[utm_source_palace]\n
+UTM_MEDIUM: $_SESSION[utm_medium_palace]\n
+UTM_CAMPAIGN: $_SESSION[utm_campaign_palace]\n
+UTM_CONTENT: $_SESSION[utm_content_palace]\n
+UTM_TERM: $_SESSION[utm_term_palace]\n", $message['params']['message']);
+      }
+
+    }
+
+  }
+
+  function extended_webform_webform_component_render_alter(&$element, $component) {
+    if (isset($element['#attributes']['placeholder'])) {
+      $element['#attributes']['placeholder'] = t($element['#attributes']['placeholder']);
+    }
+  }
+  /**
+   * extended_webform_form_alter
+   * Modifica el comportamiento de los webform
+   */
+  function extended_webform_form_alter(&$form, &$form_state, $form_id)
+  {
+    global $language;
+    $request_info_form = variable_get("request_info_form");
+    $download_brochure_form = variable_get("download_brochure_form");
+    $contact_us_form = variable_get("contact_us_form");
+    $video_form = variable_get("video_form");
+    switch ($form_id) {
+      # Request information form
+      case "webform_client_form_$request_info_form":
+        # Id for submit button
+        $form['actions']['submit']['#attributes']['id'] = 'btn-tns-'.$language->language;
+        # target the submit button and add a new submission callback routine to the form
+        $form['#submit'][] = 'custom_submit_take_the_next_step';
+        break;
+      case "webform_client_form_643":
+        # Id for submit button
+        $form['actions']['submit']['#attributes']['id'] = 'btn-tns-'.$language->language;
+        # target the submit button and add a new submission callback routine to the form
+        $form['#submit'][] = 'custom_submit_take_the_next_step';
+        break;
+    }
+  }
+  /**
+   * Custom Submit para el formulario de take next step
+   */
+
+
+
+
+  function custom_submit_take_the_next_step($form, &$form_state) {
+    //print_r($_SESSION);exit;
+    /**
+     * 2015-05-06 CHG acruz Valida en cual sitio se encuentra para definir el $page_source
+     * Se adicionan los sitios de preproduccion
+     * 20150728 BUG fabian Se pone un valor por defecto
+     * 20150821 ENH fabian Utilizo el idioma actual para saber a donde se redirige el thank you page
+     */
+    global $language, $page_sources;
+    /**
+      * Envio de datos al CRM yii
+     */
+    $datos = array();
+    $submitted = $form_state['input']['submitted'];
+    $datos['first_name']=$form_state['input']['submitted']['f1']['first_name'];
+    $datos['last_name']=$form_state['input']['submitted']['f1']['last_name'];
+    $datos['organization']=$form_state['input']['submitted']['f2']['organization'];
+    $datos['phone']=$form_state['input']['submitted']['f2']['phone'];
+    $datos['email']=$form_state['input']['submitted']['f3']['email'];
+    $datos['country']=$form_state['input']['submitted']['f3']['country'];
+    $datos['state']=$form_state['input']['submitted']['f4']['state'];
+    $datos['check_in']=$form_state['input']['submitted']['f6']['check_in'];
+    $datos['check_out']=$form_state['input']['submitted']['f6']['check_out'];
+    $datos['are_these_dates_flexible']=$form_state['input']['submitted']['f7']['are_these_dates_flexible'];
+    $datos['number_of_attendees']=$form_state['input']['submitted']['f7']['number_of_attendees'];
+    $datos['number_rooms']=$form_state['input']['submitted']['f12']['number_rooms'];
+    $datos['purpose']=$form_state['input']['submitted']['f12']['purpose'];
+    $datos['resorts']=$form_state['input']['submitted']['f10']['resorts'];
+    $datos_por_arreglo=$datos['resorts']['Cancun'].','.$datos['resorts']['Los Cabos'].','.$datos['resorts']['Jamaica'];
+    $datos['how']=$form_state['input']['submitted']['f11']['how'];
+    $datos['name']=$form_state['input']['submitted']['f11']['name'];
+
+    $term=taxonomy_term_load($datos['state']);
+    $datos['state']=$term->field_codigo_pais['und'][0]['value'];
+    $term=taxonomy_term_load($datos['country']);
+    $datos['country']=$term->field_iso['und'][0]['value'];
+    $fecha1=explode("-",$datos['check_in']);
+    $datos['check_in']=$fecha1[2].'/'.$fecha1[1].'/'.$fecha1[0];
+
+    $fecha2=explode("-",$datos['check_out']);
+    $datos['check_out']=$fecha2[2].'/'.$fecha2[1].'/'.$fecha2[0];
+    // Descomentar para activar el envio de datos a nuevoi CRM 11/21/2018
+  /*  $json_to_post=array(
+  	'idlead_interface_venta'=>1,
+  	'descripcion'=>'Palace Diference',
+  	'idlead_contacto'=> 0,
+  	'informacion_interface'=>array(
+  		'nombre contacto'=> $datos['first_name'],
+  		'apellido contacto'=> $datos['last_name'],
+  		'nombre comercial'=>$datos['organization'],
+  		'informacion_adicional'=>array(
+  			'telefono'=>$datos['phone'],
+  			'pais'=>$datos['country'],
+  			'stado'=>$datos['state'],
+  			'check_in'=>$datos['check_in'],
+  			'check_out'=>$datos['check_out'],
+  			'flexible_dates'=>$datos['are_these_dates_flexible'],
+  			'numero de asistentes'=>$datos['number_of_attendees'],
+  			'numero de cuartos'=>$datos['number_rooms'],
+  			'proposito de reunion'=>$datos['purpose'],
+  			'destinos'=>$datos_por_arreglo,
+  			'como nos conociste'=>$datos['how'],
+  			'nombre del grupo'=>$datos['name'],
+  		  )
+      ),
+  	'estado'=>1,
+  	'fecha_creacion'=>'2018-06-05 00:00:00',
+  	'usuario_creacion'=>'pedhernandez'
+  );
+
+  $json_listo=json_encode($json_to_post);
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+    CURLOPT_URL => "http://10.8.18.141/interfacecontacto/post",
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_ENCODING => "",
+    CURLOPT_MAXREDIRS => 10,
+    CURLOPT_TIMEOUT => 30,
+    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+    CURLOPT_CUSTOMREQUEST => "POST",
+    CURLOPT_POSTFIELDS =>$json_listo,
+    CURLOPT_HTTPHEADER => array(
+      "Cache-Control: no-cache",
+      "Content-Type: application/json",
+      "Postman-Token: d3390605-3055-4f53-885d-684ab2c9e50b"
+    ),
+  ));
+
+  $response = curl_exec($curl);
+  $err = curl_error($curl);
+
+  curl_close($curl);
+
+  if ($err) {
+    echo "cURL Error #:" . $err;
+  } else {
+    echo $response;
+  }*/
+    /**
+     * Envio de datos a SAP
+     */
+    $wsdl = variable_get("wsdl");
+    //echo $wsdl;exit;
+
+    if( empty($wsdl) ) drupal_set_message( t("No WSDL URL found !") ); /* Validating wsdl variable **/
+    $client = new nusoap_client($wsdl, 'wsdl');
+    $client->response_timeout = 30;
+
+    //echo variable_get("usr");echo ' pass '.variable_get("passwd");exit;
+    $client->setCredentials( variable_get("usr") , variable_get("passwd"), "basic");
+    $err = $client->getError();
+    //echo $err;exit;
+    if ($err){
+      $this->Label1->Caption = $err ;
+
+    echo $err;
+    print_r($err);die;
+  }
+    //echo $datos['nombre_novia'];exit;
+    //echo 'hay vamos '.$_SESSION['utm_campaign_palace'];exit;
+
+   $param = array(
+      'Contact' => array(
+        'First_Name' => $datos['first_name'],
+        'Last_Name' => $datos['last_name'],
+        'Address' => array(
+          'Phone'=> $datos['phone'],
+          'Email'=> $datos['email'],
+          'State'=> $datos['state'],
+          'Country' => $datos['country']
+          )
+      ),
+      'Account' => array(
+        'Organization' => $datos['organization'],
+        'Address' => array(
+          'Phone'=> $datos['phone'],
+          'Email'=> $datos['email'],
+          'State'=> $datos['state'],
+          'Country' => $datos['country']
+          )
+        ),
+      'Interest_DT_01' => $datos['check_in'],
+      'Interest_DT_02' => $datos['check_out'],
+      'Flexible_DT' => $datos['are_these_dates_flexible'],
+      'Attendees' => $datos['number_of_attendees'],
+      'Rooms' => $datos['number_rooms'],
+      'Meeting_Purpose' => $datos['purpose'],
+      'Resorts'=>array('ID_Resort' => array()),
+      'Program'=> $datos['name'],
+      'How_Heard'=>$datos['how'] ,
+      'UTM_Source_01' => $_SESSION['utm_source_palace'],
+      'UTM_Source_02' => $_SESSION['utm_medium_palace'],
+      'UTM_Terms' => $_SESSION['utm_term_palace'],
+      'UTM_Content' => $_SESSION['utm_content_palace'],
+      'UTM_Campaign' => $_SESSION['utm_campaign_palace']
+  );
+  $chain="";
+  foreach ($datos['resorts'] as $key ) {
+    if ($key=='') {
+      // code...
+    }else{
+      if ($chain=='') {
+      $chain=$key;
+    }else{
+            $chain = $chain.','.$key;
+    }
+    }
+  }
+  array_push($param['Resorts']['ID_Resort'], $chain);
+  
+    $param = array( "MT_OA_CREATE_LEAD" => array("CreateLead" => $param) );
+    //print_r($param);exit;
+    $result = $client->call('SI_OS_CREATE', $param);
+    /* 20150728 ENH fabian valido el mensaje que sera almacenado en el watchdog **/
+    validateWDMessage($result, $client, $param);
+   /* print "<pre>";
+    print_r($param);
+    print "<pre>";
+    /* 20150825 ENH fabian valido el mensaje que sera almacenado en el watchdog **/
+   //die("FIN SAP");
+  }
+  /**
+   * Getting array values in string format separated by comma
+   */
+  function gettingArrayValues($arr = array()){
+
+    $reslt = $coma = "";
+
+    foreach ($arr as $val) {
+
+      if( !empty($val) ){
+
+        $reslt .= $coma.$val;
+        $coma = ",";
+      }
+    }
+
+    return $reslt;
+  }
+
+
+
+  /** acruz: Se oculta para evitar envio a SAP de  */
+  function custom_submit_download_brochure($form, &$form_state) {
+
+    /**
+     * 2015-05-06 CHG acruz Valida en cual sitio se encuentra para definir el $page_source
+     * Se adicionan los sitios de preproduccion
+     * 20150728 BUG fabian Se pone un valor por defecto
+     */
+
+    global $page_sources, $language;
+
+    $datos = array();
+    $submitted = $form_state['input']['submitted'];
+    $datos['nombre']                  =   $form_state['input']['submitted']['first_name'];
+    $datos['apellido']                =   $form_state['input']['submitted']['last_name'];
+    $datos['email']                   =   $form_state['input']['submitted']['email'];
+    $datos['country']                 =   $form_state['input']['submitted']['country_br'];
+    $datos["palace_hotel"]            =   "";
+    $datos["are_you_a_travel_agent"]  =   "NO";
+
+    # 20150929 ENH fabian Valido la existencia o no de los nuevos campos
+    if( isset($submitted['which_palace_resort_are_you_interested_in'] ) ){
+
+      $datos["palace_hotel"] = $submitted['which_palace_resort_are_you_interested_in'];
+    }
+
+    if( isset($submitted['are_you_a_travel_agent'] ) ){
+
+      $datos["are_you_a_travel_agent"]  =   $submitted['are_you_a_travel_agent'];
+      $datos["are_you_a_travel_agent"]  =   $datos["are_you_a_travel_agent"] == "yes" ? "YES" : "NO";
+    }
+
+
+   /**
+   * Envio de datos a SAP
+   */
+   /* $wsdl = variable_get("wsdl");
+    if( empty($wsdl) ) drupal_set_message( t("No WSDL URL found !") );
+    $client = new nusoap_client($wsdl, 'wsdl');
+    $client->response_timeout = 60;
+    $client->setCredentials( variable_get("usr") , variable_get("passwd"), "basic");
+    $err = $client->getError();
+    if ($err) $this->Label1->Caption = $err ;
+
+    $page_source = array(
+      "wedding_website" => "G36",
+      "leblanc_website" => "G37",
+      "moon_palace_website" => "G38",
+      "social_media_contest" => "G39",
+      "wedding_brochure" => "G28",
+      "palace_website" => "G14"
+    );
+
+    $param = array(
+      'BrideName' => $datos['nombre'],
+      'BrideLastName' => $datos['apellido'],
+      'BridePhone' => array(
+        'PhoneCountry' => "",
+        'PhoneNumber' => ""
+      ),
+      'BrideEmail' => $datos['email'],
+      'BrideAddress' => array(
+        'Address1' => "",
+        'Address2' => "",
+        'CityName' => "",
+        'PostalCode' => "",
+        'CountryCode' => $datos['country'],
+        'StateProv' => ""
+      ),
+      'GroomName' => "",
+      'GroomLastName' => "",
+      'GroomPhone' => array(
+        'PhoneCountry' => "",
+        'PhoneNumber' => ""
+      ),
+      'GroomEmail' => "",
+      'GroomAddress' => array(
+        'Address1' => "",
+        'Address2' => "",
+        'CityName' => "",
+        'PostalCode' => "",
+        'CountryCode' => "",
+        'StateProv' => ""
+      ),
+      'IsTravelAgent' => $datos["are_you_a_travel_agent"],
+      'AgencyName' => "",
+      'AgencyIATA' => "",
+      'LeadType' => "",
+      'WeddingDate' => "",
+      'InviteGuests' => "",
+      'NumberOfGuests' => "0",
+      'DestOfInterest' => "",
+      'Source' => 'weddings-page',
+      'HotelForWed' => $datos["palace_hotel"],
+      'UTM' => array(
+        'Utm_source' => $_SESSION['utm_source_palace'],
+        'Utm_medium' => $_SESSION['utm_medium_palace'],
+        'Utm_term' => $_SESSION['utm_term_palace'],
+        'Utm_content' => $_SESSION['utm_content_palace'],
+        'Utm_campaign' => $_SESSION['utm_campaign_palace']
+      ),
+      'PageSource' => $page_source['wedding_brochure']
+    );*/
+      //'PageSource' => $page_sources[variable_get("page_source","wedding_brochure")]
+    /** Se oculta para evitar el envio a SAP */
+    /*$param = array( "MT_OA_CREATE_LEAD" => array("CreateLead" => $param) );
+    $result = $client->call('SI_OS_CREATE_LEAD', $param); */
+
+    /* 20150728 ENH fabian valido el mensaje que sera almacenado en el watchdog **/
+    //validateWDMessage($result, $client, $param);
+
+    /* 20150825 ENH fabian redirecting form **/
+    //$goto_page = variable_get("download_form_redirect_$language->language");
+
+    //if( isset($goto_page) ) drupal_goto( $goto_page );
+
+  }
+
+
+  /**
+   * Validating SAP email
+   */
+  function validateSAPEmail(){
+
+    /**
+     * Obtengo parametros
+     */
+    $process_type = ( isset($_GET["process_type"]) ? $_GET["process_type"] : null );
+    $object_id = ( isset($_GET["object_id"]) ? $_GET["object_id"] : null );
+
+    if( empty( $process_type ) || empty( $object_id ) ){
+
+      drupal_set_message( t("Params are neccessary!") );
+    }
+    /**
+    * Envio de datos a SAP
+    */
+    $wsdl = variable_get("wsdl_confirm","");
+    $usr = variable_get("usr");
+    $passwd = variable_get("passwd");
+
+    if( empty($wsdl) ) drupal_set_message( t("No WSDL URL found !"), 'error' ); /* Validating wsdl variable **/
+
+    $client = new nusoap_client($wsdl, 'wsdl');
+    $client->response_timeout = 60;
+    $client->setCredentials( $usr , $passwd, "basic");
+    $err = $client->getError();
+
+    if ($err) $this->Label1->Caption = $err ;
+
+    $param = array( 'ProcessType' => $process_type, 'LeadId' => $object_id );
+
+    $param = array( "MT_OA_CONFIRM_LEAD" => array("ConfirmLead" => $param) );
+    $result = $client->call('SI_OS_CONFIRM_LEAD', $param);
+
+    /* 20150728 ENH fabian valido el mensaje que sera almacenado en el watchdog **/
+    validateWDMessage($result, $client, $param, "sap_email_confirmation");
+
+    /* 20150825 ENH fabian redirecting form **/
+    /*$goto_page = variable_get("download_form_redirect_$language->language");
+    if( isset($goto_page) ) drupal_goto( $goto_page );*/
+
+  }
+
+  /**
+   * Validating webservice result
+   */
+  function validateWDMessage($result, $client, $param, $errtype = "webform_take_the_next_step"){
+
+    if ($client->fault) {
+
+      if(array_key_exists("faultstring", $result)){
+        watchdog($errtype, 'Fault trying to send to SAP cod.101 ' . json_encode($result), array(), WATCHDOG_ERROR);
+        #form_set_error('Fault trying to send to SAP ', $result["datail"]["SystemError"]["text"]);
+      }
+      else{
+        watchdog($errtype, 'Fault trying to send to SAP cod.102' . json_encode($result), array(), WATCHDOG_ERROR);
+        #form_set_error('Fault trying to send to SAP ', json_encode($result));
+      }
+    } else {
+      // Check for errors
+      $err = $client->getError();
+
+      if ($err) {
+        // Display the error
+        watchdog($errtype, json_encode($err), array(), WATCHDOG_ERROR);
+        #form_set_error('Fault trying to send to SAP ', json_encode($err));
+      } else {
+
+        if($result["Result"] == "000"){ // Success
+          watchdog($errtype, 'All data sent to SAP successfully.' . json_encode($param), array(), WATCHDOG_NOTICE);
+          #drupal_set_message(t('All data sent to SAP successfully.'), 'status');
+        }
+        else {
+          watchdog($errtype, 'Fault getting SAP result cod.104 ' . json_encode($result), array(), WATCHDOG_ERROR);
+          #form_set_error('Fault getting SAP result', json_encode($result));
+        }
+      }
+    }
+
+  }

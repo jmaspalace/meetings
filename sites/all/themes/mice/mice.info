@@ -1,0 +1,30 @@
+name = Mice
+description = Subtema de bootstrap para MICE Palace
+core = 7.x
+base theme = bootstrap
+
+exclude[js][] = sites/all/themes/bootstrap/js/bootstrap.js
+
+;; ADD JS FILES ;;
+scripts[] = js/bootstrap.js
+scripts[] = js/jquery-1.12.4.min.js
+scripts[] = js/jquery.flexslider-min.js
+scripts[] = js/jquery.flexslider-min.js
+scripts[] = js/owl.carousel.min.js
+scripts[] = js/plugins.min.js
+scripts[] = js/main.min.js
+scripts[] = js/disabled.js
+scripts[] = js/jquery.form.js
+
+
+
+;; ADD CSS FILES ;;
+stylesheets[all][] = css/bootstrap-select.min.css
+stylesheets[all][] = css/bootstrap-datepicker3.min.css
+stylesheets[all][] = css/flexslider.min.css
+stylesheets[all][] = css/jquery-ui.min.css
+stylesheets[all][] = css/jquery.fancybox.min.css
+stylesheets[all][] = css/owl.carousel.min.css
+stylesheets[all][] = css/owl.theme.default.min.css
+stylesheets[all][] = css/main.min.css
+stylesheets[all][] = css/custom.css

@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * @file
+ * Installation and uninstallation hooks for the Tagove chat module.
+ */
+
+
+/**
+ * Implements hook_install().
+ */
+function tagove_chat_install() {
+  // Configure the initial visibility settings.
+  variable_set('tagove_chat_visibility', 0);
+
+  // Remove tracking from all administrative pages
+  $pages = array(
+    'admin',
+    'admin/*',
+    'user/*/*',
+    'node/add*',
+    'node/*/*',
+  );
+  variable_set('tagove_chat_pages', implode("\n", $pages));
+
+  // Display a message pointing to the configuration page.
+  drupal_set_message(t('The tagove chat module has been installed but requires additional configuration on its <a href="@url">settings form</a> to work.', array('@url' => url('admin/config/services/tagovechat'))));
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function tagove_chat_uninstall() {
+  // Delete any of this module's variables that have been set.
+  variable_del('tagove_chat_account');
+  variable_del('tagove_chat_visibility');
+  variable_del('tagove_chat_pages');
+  variable_del('tagove_chat_roles');
+}

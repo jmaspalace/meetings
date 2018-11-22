@@ -1,0 +1,26 @@
+.bloque-intro {
+	text-align: center;
+	h2 {
+		color: $amarillo;
+		margin-bottom: 1.5rem;
+		padding-bottom: 1.5rem;
+		position: relative;
+		padding-left: 4rem;
+		background: url('../img/estrella.png') no-repeat left -2px;
+		display: inline-block;
+		@media (max-width: $anchoMobile) {
+			background: none;
+			padding-left: 0;
+		}
+		&::after {
+			position: absolute;
+			bottom: 0;
+			left: 50%;
+			width: 3rem;
+			margin-left: -1.5rem;
+			background: $amarillo;
+			content: "";
+			height: 1px;
+		}
+	}
+}
